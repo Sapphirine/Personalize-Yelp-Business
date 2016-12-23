@@ -8,14 +8,22 @@ function getBusinessNames(name) {
 
     theUrl = URL_BASE + 'business/get_name/' + name;
 
-    xmlHttp.onreadystatechange = function() { 
-        if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
-	    createTable("bizOutput", xmlHttp.responseText);
+    xmlHttp.onreadystatechange = function () {
+        if (xmlHttp.readyState == 4 && xmlHttp.status == 200) {
+            createTable("bizOutput", xmlHttp.responseText);
+
+            // sort the table ASC by (name, city, state)
+            $("#bizOutputTable").tablesorter({
+                sortList: [[0,0], [1,0], [2,0]]
+            });
+        }
     }
     xmlHttp.open("GET", theUrl, true); // true for asynchronous 
     xmlHttp.send(null);
 
-    document.getElementById("favorites").remove();
+    faves = document.getElementById("favorites");
+    if (faves != null)
+        faves.remove();
 }
 
 function createCol(tr, title) {
@@ -25,50 +33,67 @@ function createCol(tr, title) {
     td.innerHTML = title;
 }
 
+function createHeaderCol(tr, title) {
+    var th = document.createElement('th');
+    th.style.border = '1px solid black';
+    th.innerHTML = title;
+    tr.appendChild(th);
+}
+
 function createTable(elemId, response) {
     elem = document.getElementById(elemId);
 
     // clear table
     while (elem.firstChild)
-	elem.removeChild(elem.firstChild);
+        elem.removeChild(elem.firstChild);
 
     arr = response.split(BIZ_SEPARATOR);
     if (arr.length == 0 || arr[0].length == 0) {
-	elem.innerHTML = "No results found";
-	return;
+        elem.innerHTML = "No results found";
+        return;
     }
 
     var tbl = document.createElement('table');
     tbl.setAttribute("id", "bizOutputTable");
-    tbl.style.width  = '100px';
+    tbl.setAttribute("class", "tablesorter");
+
+    tbl.style.width = '100px';
     tbl.style.border = '1px solid black';
 
-    // create headers
-    var tr = tbl.insertRow();
-    createCol(tr, 'Name');
-    createCol(tr, 'City');
-    createCol(tr, 'State');
-    createCol(tr, 'Avg. Rating');
-    createCol(tr, 'Num. Reviews');
-    createCol(tr, 'Categories');
+    // create THEAD
+    var tblHeader = document.createElement("thead");
+    tbl.appendChild(tblHeader);
+
+    // create header columns
+    var tr = tblHeader.insertRow();
+    createHeaderCol(tr, "Name");
+    createHeaderCol(tr, "City");
+    createHeaderCol(tr, "State");
+    createHeaderCol(tr, "Avg. Rating");
+    createHeaderCol(tr, "Num. Reviews");
+    createHeaderCol(tr, "Categories");
+
+    // create TBODY
+    var tblBody = document.createElement("tbody");
+    tbl.appendChild(tblBody);
 
     for (var i = 0; i < arr.length; ++i) {
-	tmp = arr[i].split(';');
+        tmp = arr[i].split(';');
         bizName = tmp[0];
-        bizID =   tmp[1];	
+        bizID = tmp[1];
 
-	var tr = tbl.insertRow();
+        var tr = tblBody.insertRow();
 
-	// create hyperlink with restaurant ID
-	chartURL = URL_BASE + 'business/build_chart/' + bizID;
-	urlHtml = '<a href="' + chartURL + '" target="_blank">' + bizName + '</a>';
-	createCol(tr, urlHtml);
+        // create hyperlink with restaurant ID
+        chartURL = URL_BASE + 'business/build_chart/' + bizID;
+        urlHtml = '<a href="' + chartURL + '" target="_blank">' + bizName + '</a>';
+        createCol(tr, urlHtml);
 
-	createCol(tr, tmp[2]);  // city
-	createCol(tr, tmp[3]);	// state
-	createCol(tr, tmp[4]);  // stars
-	createCol(tr, tmp[5]);  // review count
-	createCol(tr, tmp[6]);  // categories
+        createCol(tr, tmp[2]);  // city
+        createCol(tr, tmp[3]);	// state
+        createCol(tr, tmp[4]);  // stars
+        createCol(tr, tmp[5]);  // review count
+        createCol(tr, tmp[6]);  // categories
     }
 
     elem.appendChild(tbl);
